@@ -1,6 +1,6 @@
 package com.profileinsight.fintrack.entity;
 
-import com.fintrack.enums.TransactionType;
+import com.profileinsight.fintrack.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
