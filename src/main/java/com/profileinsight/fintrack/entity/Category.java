@@ -1,5 +1,6 @@
 package com.profileinsight.fintrack.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.profileinsight.fintrack.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +30,7 @@ public class Category extends BaseEntity{
     @Column(length = 7)
     private String color;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "category", cascade = CascadeType.PERSIST)
     @Builder.Default
     private List<Transaction> transactions = new ArrayList<>();

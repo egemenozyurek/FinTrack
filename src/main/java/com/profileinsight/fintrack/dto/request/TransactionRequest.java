@@ -20,7 +20,7 @@ public class TransactionRequest {
     private TransactionType type;
 
     @NotNull(message = "Date cannot be nullable")
-    @PastOrPresent(message = "A transaction witha future date cannot be added")
+    @PastOrPresent(message = "A transaction with a future date cannot be added")
     private LocalDate transactionDate;
 
     @NotNull(message = "Category cannot be nullable")
