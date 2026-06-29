@@ -17,7 +17,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-
+/**
+ * Tüm güvenlik kurallarının tanımlandığı yer.
+ *
+ * Kritik kararlar:
+ * - SessionCreationPolicy.STATELESS: Spring hiçbir session oluşturmasın.
+ *   JWT zaten her isteğin kendi kimliğini taşıyor, session'a gerek yok.
+ * - CSRF kapalı: CSRF koruması, tarayıcı + cookie tabanlı session'lar için var.
+ *   Biz JWT + mobil istemci kullandığımız için CSRF riski yok, kapatıyoruz.
+ * - JwtAuthenticationFilter, Spring'in kendi login filtresinden ÖNCE çalışmalı.
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -31,15 +40,16 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Herkese açık: login, register, Swagger
                         .requestMatchers(
                                 "/api/v1/auth/**",
-                                "/error",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs",
                                 "/webjars/**"
                         ).permitAll()
+                        // Geri kalan HER ŞEY token gerektirir
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
@@ -53,9 +63,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-       DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-       provider.setPasswordEncoder(passwordEncoder());
-       return provider;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
@@ -65,7 +75,9 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
+        // BCrypt: şifreyi tek yönlü hash'ler, geri çözülemez.
+        // Her hash'leme farklı "salt" kullanır — aynı şifre, farklı hash üretir.
+        // Bu, rainbow table saldırılarına karşı korur.
         return new BCryptPasswordEncoder();
     }
 }
