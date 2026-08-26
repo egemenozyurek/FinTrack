@@ -28,24 +28,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
-        System.out.println(">>> AUTH HEADER: " + authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println(">>> HEADER YOK VEYA BEARER DEĞİL");
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7);
-        System.out.println(">>> TOKEN (ilk 30 karakter): " + token.substring(0, Math.min(30, token.length())));
 
         try {
-            boolean valid = jwtService.isTokenValid(token);
-            System.out.println(">>> TOKEN GEÇERLİ Mİ: " + valid);
-
-            if (valid) {
+            if (jwtService.isTokenValid(token)) {
                 Long userId = jwtService.extractUserId(token);
-                System.out.println(">>> USER ID: " + userId);
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -54,8 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         } catch (Exception e) {
-            System.out.println(">>> TOKEN PARSE HATASI: " + e.getMessage());
-            e.printStackTrace();
+
         }
 
         filterChain.doFilter(request, response);
