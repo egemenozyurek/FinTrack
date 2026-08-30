@@ -1,48 +1,43 @@
-# FinTrack — Personal Finance Tracker
+# FinTrack — Backend
 
-A full-stack mobile application for tracking income/expenses, managing debts, and generating monthly financial reports.
+REST API for a full-stack personal finance tracker. Handles authentication, transaction management, debt tracking and monthly financial reporting.
 
-**Backend:** Java 25 · Spring Boot 4 · PostgreSQL · JWT  
-**Frontend:** React Native · Expo *(in development)*
+Built with Java Spring Boot 4, deployed on Railway.
 
----
-
-## Features
-
-- **Income & Expense Tracking** — category-based records, recurring transaction support
-- **Debt Management** — lent/borrowed tracking, partial payment history, due date reminders
-- **Monthly Reports** — income/expense summary, category breakdown, 6-month trend analysis
-- **JWT Authentication** — secure register and login
-- **RESTful API** — 15+ endpoints documented with Swagger UI
+**Mobile frontend:** [github.com/egemenozyurek/FinTrack-Mobile](https://github.com/egemenozyurek/FinTrack-Mobile)
 
 ---
 
-## Technology Decisions
+## Tech Stack
 
-| Decision | Why |
+| Layer | Technology |
 |---|---|
-| `BigDecimal` for money | `double` causes floating point errors; mandatory for financial apps |
-| `FetchType.LAZY` | Prevents unnecessary JOINs and N+1 query problem |
-| Flyway migration | Schema changes are version-controlled; `ddl-auto=create` risks data loss in production |
-| JWT stateless auth | More practical than sessions for mobile clients |
-| Interface + Impl separation | Decouples dependency to abstraction; simplifies unit testing |
-| DTO layer | Prevents exposing entities directly; sensitive fields like `passwordHash` never reach the response |
+| Language | Java 21 |
+| Framework | Spring Boot 4 |
+| Security | Spring Security + JWT |
+| Database | PostgreSQL |
+| Migrations | Flyway |
+| ORM | Spring Data JPA / Hibernate |
+| Containerization | Docker + Docker Compose |
+| Deploy | Railway |
+| Documentation | Swagger / OpenAPI |
+| Build | Maven |
 
 ---
 
-## Project Structure
+## Architecture
 
 ```
 src/main/java/com/profileinsight/fintrack/
-├── config/          # SecurityConfig, SwaggerConfig
-├── controller/      # REST endpoints
+├── config/          # SecurityConfig, SwaggerConfig, FlywayConfig
+├── controller/      # REST endpoints — HTTP layer only
 ├── dto/             # Request / Response objects
 │   ├── request/
 │   └── response/
 ├── entity/          # JPA entity classes
 ├── enums/           # TransactionType, DebtType, DebtStatus
 ├── exception/       # GlobalExceptionHandler, custom exceptions
-├── repository/      # Spring Data JPA interfaces
+├── repository/      # Spring Data JPA interfaces + JPQL queries
 ├── security/        # JWT filter, UserDetailsService
 └── service/         # Business logic
     └── impl/
@@ -55,41 +50,55 @@ src/main/java/com/profileinsight/fintrack/
 ### Auth
 | Method | URL | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | Register new user | ❌ |
-| POST | `/api/v1/auth/login` | Login — returns JWT token | ❌ |
+| POST | `/api/v1/auth/register` | Register new user | Public |
+| POST | `/api/v1/auth/login` | Login — returns JWT token | Public |
 
 ### Transactions
 | Method | URL | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/transactions` | Add transaction | ✅ |
-| GET | `/api/v1/transactions` | List all transactions | ✅ |
-| GET | `/api/v1/transactions/{id}` | Get single transaction | ✅ |
-| GET | `/api/v1/transactions/monthly?year=&month=` | Filter by month | ✅ |
-| PUT | `/api/v1/transactions/{id}` | Update transaction | ✅ |
-| DELETE | `/api/v1/transactions/{id}` | Delete transaction | ✅ |
+| POST | `/api/v1/transactions` | Add transaction | Required |
+| GET | `/api/v1/transactions` | List all transactions | Required |
+| GET | `/api/v1/transactions/{id}` | Get single transaction | Required |
+| GET | `/api/v1/transactions/monthly?year=&month=` | Filter by month | Required |
+| PUT | `/api/v1/transactions/{id}` | Update transaction | Required |
+| DELETE | `/api/v1/transactions/{id}` | Delete transaction | Required |
 
 ### Debts
 | Method | URL | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/debts` | Add debt | ✅ |
-| GET | `/api/v1/debts` | List all debts | ✅ |
-| GET | `/api/v1/debts/overdue` | Get overdue debts | ✅ |
-| POST | `/api/v1/debts/{id}/payments` | Add payment | ✅ |
-| DELETE | `/api/v1/debts/{id}` | Delete debt | ✅ |
+| POST | `/api/v1/debts` | Add debt | Required |
+| GET | `/api/v1/debts` | List all debts | Required |
+| GET | `/api/v1/debts/overdue` | Get overdue debts | Required |
+| POST | `/api/v1/debts/{id}/payments` | Add payment | Required |
+| DELETE | `/api/v1/debts/{id}` | Delete debt | Required |
 
 ### Categories & Reports
 | Method | URL | Description | Auth |
 |---|---|---|---|
-| GET | `/api/v1/categories` | List all categories | ✅ |
-| GET | `/api/v1/categories?type=EXPENSE` | Filter by type | ✅ |
-| GET | `/api/v1/reports/monthly?year=&month=` | Monthly report | ✅ |
+| GET | `/api/v1/categories` | List all categories | Required |
+| GET | `/api/v1/categories?type=EXPENSE` | Filter by type | Required |
+| GET | `/api/v1/reports/monthly?year=&month=` | Monthly report | Required |
+
+---
+
+## Key Design Decisions
+
+| Decision | Why |
+|---|---|
+| `BigDecimal` for money | `double` causes floating point errors — unacceptable in financial apps |
+| `FetchType.LAZY` | Prevents unnecessary JOINs and N+1 query problem |
+| Flyway over `ddl-auto=create` | Schema changes are version-controlled; `create` risks data loss in production |
+| JWT stateless auth | More practical than sessions for mobile clients |
+| Interface + Impl separation | Decouples dependencies; simplifies unit testing with Mockito |
+| DTO layer | Prevents exposing entities; sensitive fields like `passwordHash` never reach the response |
+| `GlobalExceptionHandler` | Centralised error handling — no try/catch in controllers |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Java 25+
+- Java 21+
 - PostgreSQL 15+
 - Maven 3.9+
 
@@ -99,44 +108,40 @@ src/main/java/com/profileinsight/fintrack/
 CREATE DATABASE fintrack;
 ```
 
-### 2. Configure Application
+### 2. Configure
 
-Edit `src/main/resources/application.properties`:
+Copy `.env.example` to `.env` and fill in your values:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/fintrack
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_PASSWORD
-
-jwt.secret=at-least-32-characters-long-secret-key
-jwt.expiration=86400000
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fintrack
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=your_password
+JWT_SECRET=at-least-32-characters-long-secret-key
+JWT_EXPIRATION=86400000
 ```
 
 ### 3. Run
 
 ```bash
-mvn clean package
+mvn clean package -DskipTests
 mvn spring-boot:run
 ```
 
-The application starts at `http://localhost:8080`.  
+The application starts at `http://localhost:8080`.
 Flyway automatically creates all tables and seeds 14 default categories on first run.
+
+### Docker
+
+```bash
+docker compose up --build
+```
 
 ---
 
-## API Usage
+## Live API
 
-**1. Register:**
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John Doe","email":"john@example.com","password":"password123"}'
 ```
-
-**2. Use the returned token in subsequent requests:**
-```bash
-curl -X GET http://localhost:8080/api/v1/categories \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+https://fintrack-production-2a5c.up.railway.app
 ```
 
 ---
@@ -153,11 +158,12 @@ users ──< transactions >── categories
 
 ## Roadmap
 
-- [x] Backend API (Spring Boot + PostgreSQL)
+- [x] REST API with Spring Boot
 - [x] JWT authentication
-- [x] Flyway migration + seed data
-- [ ] React Native frontend (Expo)
-- [ ] Docker Compose
+- [x] PostgreSQL + Flyway migration + seed data
+- [x] Docker + Docker Compose
+- [x] Deployed on Railway
+- [ ] Unit tests (JUnit + Mockito)
 - [ ] FinTrack Analytics (Python + scikit-learn)
 
 ---
