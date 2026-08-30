@@ -62,7 +62,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Flyway — versiyon Spring Boot parent'tan geliyor -->
+        <!-- Flyway -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
